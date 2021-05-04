@@ -1,0 +1,17 @@
+{
+  "name": "backend",
+  "main": "index.js",
+  "module": "src/index.js",
+  "scripts": {
+    "start": "nodemon ."
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "esm": "^3.2.25",
+    "evilscan": "^1.8.0",
+    "socket.io": "^4.0.1"
+  },
+  "devDependencies": {
+    "dotenv": "^8.2.0"
+  }
+}
