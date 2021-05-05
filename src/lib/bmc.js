@@ -34,6 +34,7 @@ const scan_redfish = () => {
                     guid: response.data.UUID.toLowerCase().trim() || '',
                     asset_tag: response.data.AssetTag.toLowerCase().trim() || '',
                     serial_number: response.data.SerialNumber.toLowerCase().trim() || '',
+                    power: response.data.PowerState.toLowerCase().trim() || '',
                 }
             })
             .then(response => inMemoryDB.push(response))
