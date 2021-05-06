@@ -59,7 +59,7 @@ const get_data = () => {
 }
 
 const start_scan = () => {
-    scan_network(networks)
+    return scan_network(networks)
         .then(scan_redfish)
 }
 
