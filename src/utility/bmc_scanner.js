@@ -2,15 +2,20 @@ import evilscan from 'evilscan'
 import axios from 'axios'
 import https from 'https'
 import dotenv from 'dotenv'; dotenv.config()
-import networks from './networks'
+import { db, networks } from './bmc_networks'
 
 const { BMC_USERNAME, BMC_PASSWORD } = process.env
 
-var inMemoryDB, scanResults
+var scan_results, redfish_results
+
+const update_database = () => {
+    db.remove({})
+    db.insert(redfish_results, (err, doc) => err ? console.log(err.message) : console.log(doc))
+}
 
 const scan_redfish = () => {
-    inMemoryDB = []
-    return Promise.all(scanResults.map(scan => {
+    redfish_results = []
+    return Promise.all(scan_results.map(scan => {
         const request = axios.create({
             baseURL: `https://${BMC_USERNAME}:${BMC_PASSWORD}@${scan.ip}`,
             httpsAgent: new https.Agent({ rejectUnauthorized: false })
@@ -37,30 +42,38 @@ const scan_redfish = () => {
                     power: response.data.PowerState.toLowerCase().trim() || '',
                 }
             })
-            .then(response => inMemoryDB.push(response))
+            .then(response => redfish_results.push(response))
             .catch(() => { })
     }))
 }
 
-const scan_network = networks => {
-    scanResults = []
+const scan_network = () => {
+    scan_results = []
     return Promise.all(networks.map(({ target, port, ...rest }) => {
         return new Promise(resolve => {
             new evilscan({ target, port, status: 'O', banner: false }, (err, scan) => {
-                scan.on('result', result => scanResults.push({ ...result, ...rest }))
+                scan.on('result', result => scan_results.push({ ...result, ...rest }))
                 scan.on('done', resolve)
             }).run()
         })
     }))
 }
 
-const get_data = () => {
-    return inMemoryDB
-}
-
-const start_scan = () => {
-    return scan_network(networks)
+export const scan_bmc = (req, res) => {
+    scan_network()
         .then(scan_redfish)
+        .then(update_database)
+        .then(() => db.find({}, (err, doc) => {
+            err
+                ? res.status(500).send(err.message)
+                : res.status(200).send(doc)
+        }))
 }
 
-export { get_data, start_scan }
+export const get_bmc = (req, res) => {
+    db.find({}, (err, doc) => {
+        err
+            ? res.status(500).send(err.message)
+            : res.status(200).send(doc)
+    })
+}
